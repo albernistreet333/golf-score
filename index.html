@@ -28,7 +28,6 @@
   .chart{display:flex; align-items:flex-end; gap:6px; height:110px; padding-top:6px;}
   .bar-wrap{flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; min-width:0;}
   .bar{width:70%; max-width:26px; background:var(--green); border-radius:4px 4px 0 0;}
-  .bar.best{background:#d4a017;}
   .bar.win{background:#1565c0;}
   .bar.lose{background:#c62828;}
   .bar-lbl{font-size:10px; color:var(--muted); white-space:nowrap;}
@@ -508,7 +507,6 @@
     var chart = document.getElementById("chart");
     var recent = sorted.slice(0,10).reverse();
     if(recent.length && totals.length){
-      var best = Math.min.apply(null, totals);
       var oppMap = {};
       rounds.forEach(function(r){ if(r.player !== currentPlayer) oppMap[r.date + "|" + r.course] = r; });
       var max = Math.max.apply(null, recent.map(total).filter(function(x){ return x != null; }));
@@ -519,13 +517,12 @@
         var h = Math.max(12, Math.round((t - Math.min(60, min)) / range * 84));
         var res = matchResult(r, oppMap[r.date + "|" + r.course]);
         var cls = "";
-        if(t === best) cls = " best";
-        else if(res === "win") cls = " win";
+        if(res === "win") cls = " win";
         else if(res === "lose") cls = " lose";
         return '<div class="bar-wrap"><div class="bar-val">' + t + '</div><div class="bar' + cls + '" style="height:' + h + 'px"></div><div class="bar-lbl">' + esc(fmtDate(r.date)) + '</div></div>';
       }).join("");
       var scope = (currentCourse === "all" ? "" : currentCourse + "／") + (currentYear === "all" ? "" : currentYear + "年");
-      document.getElementById("chart-note").textContent = (scope ? scope + "の" : "") + "直近" + recent.length + "ラウンドのスコア推移（青＝勝ち・赤＝負け・金＝ベスト）";
+      document.getElementById("chart-note").textContent = (scope ? scope + "の" : "") + "直近" + recent.length + "ラウンドのスコア推移（青＝勝ち・赤＝負け）";
     } else {
       chart.innerHTML = "";
       document.getElementById("chart-note").textContent = "";
