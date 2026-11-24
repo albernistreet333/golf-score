@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ゴルフスコア</title>
+<title>our stats</title>
 <style>
   :root{
     --green:#1d7a3f; --green-dark:#145c2e; --bg:#f2f6f2; --card:#ffffff;
@@ -18,6 +18,7 @@
   .head-row{display:flex; justify-content:space-between; align-items:center; gap:10px;}
   .sel-col{display:flex; flex-direction:column; gap:6px; width:44%;}
   .hdr-sel{font-size:15px; font-weight:700; color:#fff; background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.55); border-radius:9px; padding:8px 6px; width:100%;}
+  #reload-btn{margin-top:8px; font-size:13px; font-weight:700; color:#fff; background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.55); border-radius:999px; padding:5px 14px; cursor:pointer;}
   main{padding:14px 14px 90px; max-width:640px; margin:0 auto;}
   .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:14px;}
   .card h2{margin:0 0 10px; font-size:15px; color:var(--green-dark);}
@@ -67,13 +68,14 @@
   .score-table td.over{color:var(--danger); font-weight:700;}
   .score-table td.under{color:var(--green); font-weight:700;}
 </style>
-<link rel="apple-touch-icon" href="icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="ゴルフスコア"></head>
+<link rel="apple-touch-icon" href="icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="our stats"></head>
 <body>
 <header>
   <div class="head-row">
     <div>
-      <h1>⛳ ゴルフスコア</h1>
+      <h1>our stats</h1>
       <p>しんご＆たくろーのスコア帳</p>
+      <button id="reload-btn" type="button">↻ 更新</button>
     </div>
     <div class="sel-col">
       <select id="year-sel" class="hdr-sel" aria-label="表示する年"></select>
@@ -628,6 +630,7 @@
   document.getElementById("seg-takuro").addEventListener("click", function(){ setSeg("takuro"); });
   document.getElementById("year-sel").addEventListener("change", function(){ currentYear = this.value; render(); });
   document.getElementById("course-sel").addEventListener("change", function(){ currentCourse = this.value; render(); });
+  document.getElementById("reload-btn").addEventListener("click", function(){ location.replace(location.pathname + "?v=" + Date.now()); });
   render();
 })();
 </script>
