@@ -16,7 +16,8 @@
   header h1{margin:0; font-size:20px; letter-spacing:.05em;}
   header p{margin:4px 0 0; font-size:12px; opacity:.85;}
   .head-row{display:flex; justify-content:space-between; align-items:center; gap:10px;}
-  #year-sel{font-size:15px; font-weight:700; color:#fff; background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.55); border-radius:9px; padding:8px 6px; max-width:42%;}
+  .sel-col{display:flex; flex-direction:column; gap:6px; width:44%;}
+  .hdr-sel{font-size:15px; font-weight:700; color:#fff; background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.55); border-radius:9px; padding:8px 6px; width:100%;}
   main{padding:14px 14px 90px; max-width:640px; margin:0 auto;}
   .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:14px;}
   .card h2{margin:0 0 10px; font-size:15px; color:var(--green-dark);}
@@ -73,7 +74,10 @@
       <h1>⛳ ゴルフスコア</h1>
       <p>しんご＆たくろーのスコア帳</p>
     </div>
-    <select id="year-sel" aria-label="表示する年"></select>
+    <div class="sel-col">
+      <select id="year-sel" class="hdr-sel" aria-label="表示する年"></select>
+      <select id="course-sel" class="hdr-sel" aria-label="表示するコース"></select>
+    </div>
   </div>
 </header>
 <main>
@@ -358,6 +362,7 @@
   var currentPlayer = "umemura";
   var formPlayer = "umemura";
   var currentYear = "all";
+  var currentCourse = "all";
   function save(){ try{ localStorage.setItem(KEY, JSON.stringify(rounds)); }catch(e){} }
   function yen(n){ return n == null ? "–" : String(n); }
   function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
@@ -370,6 +375,17 @@
     return Number(p[1]) + "/" + Number(p[2]) + "（" + w + "）";
   }
   function inYear(r){ return currentYear === "all" || (r.date && r.date.slice(0,4) === currentYear); }
+  function inCourse(r){ return currentCourse === "all" || r.course === currentCourse; }
+  function setupCourses(){
+    var latest = {};
+    rounds.forEach(function(r){ if(r.course && (!latest[r.course] || (r.date || "") > latest[r.course])) latest[r.course] = r.date || ""; });
+    var cs = Object.keys(latest).sort(function(a,b){ return latest[a] < latest[b] ? 1 : (latest[a] > latest[b] ? -1 : 0); });
+    var sel = document.getElementById("course-sel");
+    if(!sel) return;
+    sel.innerHTML = '<option value="all">全コース</option>' + cs.map(function(c){ return '<option value="' + esc(c) + '">' + esc(c) + '</option>'; }).join("");
+    sel.value = (currentCourse === "all" || latest[currentCourse]) ? currentCourse : "all";
+    currentCourse = sel.value;
+  }
   function setupYears(){
     var years = {};
     rounds.forEach(function(r){ if(r.date) years[r.date.slice(0,4)] = true; });
@@ -381,7 +397,7 @@
     currentYear = sel.value;
   }
   function holeStats(pid){
-    var rs = rounds.filter(function(r){ return r.player === pid && inYear(r) && r.holes && r.holes.length; });
+    var rs = rounds.filter(function(r){ return r.player === pid && inYear(r) && inCourse(r) && r.holes && r.holes.length; });
     var c = { birdie: 0, bogey: 0, dbl: 0, tpl: 0 };
     rs.forEach(function(r){
       r.holes.forEach(function(h){
@@ -397,7 +413,7 @@
     return { birdie: av(c.birdie), bogey: av(c.bogey), dbl: av(c.dbl), tpl: av(c.tpl) };
   }
   function playerStats(pid){
-    var rs = rounds.filter(function(r){ return r.player === pid && inYear(r); });
+    var rs = rounds.filter(function(r){ return r.player === pid && inYear(r) && inCourse(r); });
     var ts = rs.map(total).filter(function(x){ return x != null; });
     var ps = rs.map(function(r){ return r.putts; }).filter(function(x){ return x; });
     return {
@@ -431,6 +447,7 @@
   }
   function render(){
     setupYears();
+    setupCourses();
     document.getElementById("tab-umemura").className = "tab" + (currentPlayer === "umemura" ? " on" : "");
     document.getElementById("tab-takuro").className = "tab" + (currentPlayer === "takuro" ? " on" : "");
     document.getElementById("sum-name").textContent = NAMES[currentPlayer];
@@ -453,7 +470,7 @@
     document.getElementById("cmp-dbl-t").textContent = ht.dbl;
     document.getElementById("cmp-tpl-u").textContent = hu.tpl;
     document.getElementById("cmp-tpl-t").textContent = ht.tpl;
-    var sorted = rounds.filter(function(r){ return r.player === currentPlayer && inYear(r); }).sort(function(a,b){ return a.date < b.date ? 1 : (a.date > b.date ? -1 : 0); });
+    var sorted = rounds.filter(function(r){ return r.player === currentPlayer && inYear(r) && inCourse(r); }).sort(function(a,b){ return a.date < b.date ? 1 : (a.date > b.date ? -1 : 0); });
     // サマリー
     var totals = sorted.map(total).filter(function(x){ return x != null; });
     document.getElementById("st-count").textContent = yen(sorted.length);
@@ -480,7 +497,8 @@
         var h = Math.max(12, Math.round((t - Math.min(60, min)) / range * 84));
         return '<div class="bar-wrap"><div class="bar-val">' + t + '</div><div class="bar' + (t === best ? " best" : "") + '" style="height:' + h + 'px"></div><div class="bar-lbl">' + esc(fmtDate(r.date)) + '</div></div>';
       }).join("");
-      document.getElementById("chart-note").textContent = (currentYear === "all" ? "直近" : currentYear + "年の直近") + recent.length + "ラウンドのスコア推移（金色はベストスコア）";
+      var scope = (currentCourse === "all" ? "" : currentCourse + "／") + (currentYear === "all" ? "" : currentYear + "年");
+      document.getElementById("chart-note").textContent = (scope ? scope + "の" : "") + "直近" + recent.length + "ラウンドのスコア推移（金色はベストスコア）";
     } else {
       chart.innerHTML = "";
       document.getElementById("chart-note").textContent = "";
@@ -488,7 +506,7 @@
     // 一覧
     var list = document.getElementById("list");
     if(!sorted.length){
-      list.innerHTML = '<div class="empty">' + (currentYear === "all" ? "まだラウンドが登録されていません" : currentYear + "年のラウンドはまだ登録されていません") + '</div>';
+      list.innerHTML = '<div class="empty">' + ((currentYear === "all" && currentCourse === "all") ? "まだラウンドが登録されていません" : "その条件のラウンドはまだ登録されていません") + '</div>';
     } else {
       list.innerHTML = sorted.map(function(r){
         var t = total(r);
@@ -585,6 +603,7 @@
   document.getElementById("seg-umemura").addEventListener("click", function(){ setSeg("umemura"); });
   document.getElementById("seg-takuro").addEventListener("click", function(){ setSeg("takuro"); });
   document.getElementById("year-sel").addEventListener("change", function(){ currentYear = this.value; render(); });
+  document.getElementById("course-sel").addEventListener("change", function(){ currentCourse = this.value; render(); });
   render();
 })();
 </script>
