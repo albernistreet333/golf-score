@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ゴルフスコア</title>
+<style>
+  :root{
+    --green:#1d7a3f; --green-dark:#145c2e; --bg:#f2f6f2; --card:#ffffff;
+    --text:#1c2b1f; --muted:#6b7a6e; --line:#dde7dd; --accent:#e8f3e9;
+    --danger:#c0392b;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{margin:0; font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif; background:var(--bg); color:var(--text);}
+  header{background:linear-gradient(135deg,var(--green),var(--green-dark)); color:#fff; padding:18px 16px 14px; position:sticky; top:0; z-index:5;}
+  header h1{margin:0; font-size:20px; letter-spacing:.05em;}
+  header p{margin:4px 0 0; font-size:12px; opacity:.85;}
+  main{padding:14px 14px 90px; max-width:640px; margin:0 auto;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:14px;}
+  .card h2{margin:0 0 10px; font-size:15px; color:var(--green-dark);}
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:8px;}
+  .stat{background:var(--accent); border-radius:10px; padding:10px 4px; text-align:center;}
+  .stat .num{font-size:20px; font-weight:700; color:var(--green-dark);}
+  .stat .lbl{font-size:11px; color:var(--muted); margin-top:2px;}
+  .chart{display:flex; align-items:flex-end; gap:6px; height:110px; padding-top:6px;}
+  .bar-wrap{flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; min-width:0;}
+  .bar{width:70%; max-width:26px; background:var(--green); border-radius:4px 4px 0 0;}
+  .bar.best{background:#d4a017;}
+  .bar-lbl{font-size:10px; color:var(--muted); white-space:nowrap;}
+  .bar-val{font-size:11px; font-weight:600;}
+  label{display:block; font-size:12px; color:var(--muted); margin:10px 0 4px;}
+  input,textarea{width:100%; font-size:16px; padding:10px; border:1px solid var(--line); border-radius:10px; background:#fff; color:var(--text);}
+  .row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;}
+  .total-box{background:var(--accent); border-radius:10px; padding:10px; text-align:center; font-size:15px; margin-top:12px;}
+  .total-box b{font-size:20px; color:var(--green-dark);}
+  button{font-size:16px; border:none; border-radius:10px; padding:12px; cursor:pointer;}
+  .btn-main{background:var(--green); color:#fff; width:100%; margin-top:12px; font-weight:700;}
+  .btn-sub{background:#fff; border:1px solid var(--line); color:var(--text); font-size:13px; padding:9px 10px;}
+  .round{border:1px solid var(--line); border-radius:12px; padding:11px 12px; margin-bottom:9px; background:#fff;}
+  .round-top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .round-course{font-weight:700; font-size:15px;}
+  .round-score{font-size:20px; font-weight:800; color:var(--green-dark); white-space:nowrap;}
+  .round-meta{font-size:12px; color:var(--muted); margin-top:3px; line-height:1.5;}
+  .round-del{color:var(--danger); background:none; font-size:12px; padding:4px 0 0;}
+  .empty{color:var(--muted); font-size:13px; text-align:center; padding:14px 0;}
+  .btn-row{display:flex; gap:8px; flex-wrap:wrap;}
+  .note{font-size:11px; color:var(--muted); line-height:1.6;}
+  .tabs{display:flex; gap:8px; margin-bottom:14px;}
+  .tab{flex:1; background:#fff; border:1px solid var(--line); color:var(--muted); font-weight:700; padding:11px;}
+  .tab.on{background:var(--green); border-color:var(--green); color:#fff;}
+  .seg{display:flex; gap:8px;}
+  .seg button{flex:1; background:#fff; border:1px solid var(--line); color:var(--muted); font-size:14px; padding:10px;}
+  .seg button.on{background:var(--accent); border-color:var(--green); color:var(--green-dark); font-weight:700;}
+  .cmp{width:100%; border-collapse:collapse; font-size:14px;}
+  .cmp th,.cmp td{padding:8px 6px; border-bottom:1px solid var(--line); text-align:center;}
+  .cmp th:first-child,.cmp td:first-child{text-align:left; color:var(--muted); font-size:12px;}
+  .cmp td b{color:var(--green-dark); font-size:16px;}
+  .detail-btn{background:none; color:var(--green); font-size:12px; padding:4px 0 0; font-weight:700;}
+  .score-table{width:100%; border-collapse:collapse; font-size:13px; margin-top:8px;}
+  .score-table th,.score-table td{padding:5px 4px; border-bottom:1px solid var(--line); text-align:center;}
+  .score-table th{color:var(--muted); font-size:11px;}
+  .score-table tr.sub td{background:var(--accent); font-weight:700;}
+  .score-table td.over{color:var(--danger); font-weight:700;}
+  .score-table td.under{color:var(--green); font-weight:700;}
+</style>
+<link rel="apple-touch-icon" href="icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="ゴルフスコア"></head>
+<body>
+<header>
+  <h1>⛳ ゴルフスコア</h1>
+  <p>しんご＆たくろーのスコア帳</p>
+</header>
+<main>
+  <div class="tabs">
+    <button class="tab on" id="tab-umemura">しんご</button>
+    <button class="tab" id="tab-takuro">たくろー</button>
+  </div>
+  <section class="card">
+    <h2>成績サマリー（<span id="sum-name">梅村</span>）</h2>
+    <div class="stats">
+      <div class="stat"><div class="num" id="st-count">–</div><div class="lbl">ラウンド数</div></div>
+      <div class="stat"><div class="num" id="st-avg">–</div><div class="lbl">平均スコア</div></div>
+      <div class="stat"><div class="num" id="st-best">–</div><div class="lbl">ベスト</div></div>
+      <div class="stat"><div class="num" id="st-putt">–</div><div class="lbl">平均パット</div></div>
+    </div>
+    <div class="chart" id="chart"></div>
+    <p class="note" id="chart-note"></p>
+  </section>
+
+  <section class="card">
+    <h2>2人の比較</h2>
+    <table class="cmp">
+      <tr><th></th><th>しんご</th><th>たくろー</th></tr>
+      <tr><td>ラウンド数</td><td id="cmp-count-u">–</td><td id="cmp-count-t">–</td></tr>
+      <tr><td>平均スコア</td><td id="cmp-avg-u">–</td><td id="cmp-avg-t">–</td></tr>
+      <tr><td>ベスト</td><td id="cmp-best-u">–</td><td id="cmp-best-t">–</td></tr>
+      <tr><td>平均パット</td><td id="cmp-putt-u">–</td><td id="cmp-putt-t">–</td></tr>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>ラウンド登録</h2>
+    <label>プレイヤー</label>
+    <div class="seg">
+      <button type="button" class="on" id="seg-umemura">しんご</button>
+      <button type="button" id="seg-takuro">たくろー</button>
+    </div>
+    <label>日付</label>
+    <input type="date" id="f-date">
+    <label>ゴルフ場</label>
+    <input type="text" id="f-course" placeholder="例：三日月カントリークラブ">
+    <div class="row3">
+      <div><label>OUT</label><input type="number" id="f-out" inputmode="numeric" placeholder="45"></div>
+      <div><label>IN</label><input type="number" id="f-in" inputmode="numeric" placeholder="46"></div>
+      <div><label>パット数</label><input type="number" id="f-putts" inputmode="numeric" placeholder="34"></div>
+    </div>
+    <div class="total-box">合計スコア <b id="f-total">–</b></div>
+    <label>メモ</label>
+    <textarea id="f-memo" rows="2" placeholder="同伴者、天候、調子など"></textarea>
+    <button class="btn-main" id="btn-add">登録する</button>
+  </section>
+
+  <section class="card">
+    <h2>ラウンド履歴（<span id="list-name">梅村</span>）</h2>
+    <div id="list"></div>
+  </section>
+
+  <section class="card">
+    <h2>データのバックアップ</h2>
+    <div class="btn-row">
+      <button class="btn-sub" id="btn-export">データを書き出す</button>
+      <button class="btn-sub" id="btn-import">データを読み込む</button>
+      <input type="file" id="file-import" accept=".json,application/json" style="display:none">
+    </div>
+    <p class="note">データはこの端末の中に保存されます。機種変更の前に「書き出す」でファイルを保存しておくと、「読み込む」で元に戻せます。</p>
+  </section>
+</main>
+<script>
+(function(){
+  "use strict";
+  var KEY = "golfScoreApp.v1";
+  // 過去スコアの初期データ（空の端末で最初に開いたときだけ取り込まれる）
+  // holes: {no: ホール番号, par: 規定打数, s: 打数, p: パット数}
+  var SEED = [
+    { id: "seed-20261003-u", player: "umemura", date: "2026-10-03", course: "フォレスト市川", out: 50, inn: 50, putts: 32, memo: "",
+      holes: [
+        {no:1,par:4,s:4,p:1},{no:2,par:4,s:7,p:1},{no:3,par:5,s:8,p:2},{no:4,par:4,s:6,p:2},{no:5,par:3,s:6,p:2},{no:6,par:5,s:7,p:1},{no:7,par:3,s:3,p:2},{no:8,par:4,s:4,p:2},{no:9,par:4,s:5,p:1},
+        {no:10,par:4,s:7,p:2},{no:11,par:5,s:5,p:2},{no:12,par:4,s:8,p:1},{no:13,par:3,s:4,p:3},{no:14,par:4,s:7,p:2},{no:15,par:4,s:4,p:2},{no:16,par:5,s:5,p:1},{no:17,par:3,s:4,p:3},{no:18,par:4,s:6,p:2}
+      ]},
+    { id: "seed-20261003-t", player: "takuro", date: "2026-10-03", course: "フォレスト市川", out: 49, inn: 50, putts: 36, memo: "",
+      holes: [
+        {no:1,par:4,s:4,p:1},{no:2,par:4,s:6,p:3},{no:3,par:5,s:5,p:2},{no:4,par:4,s:7,p:3},{no:5,par:3,s:5,p:3},{no:6,par:5,s:6,p:2},{no:7,par:3,s:4,p:3},{no:8,par:4,s:6,p:2},{no:9,par:4,s:6,p:1},
+        {no:10,par:4,s:6,p:1},{no:11,par:5,s:6,p:1},{no:12,par:4,s:8,p:2},{no:13,par:3,s:4,p:3},{no:14,par:4,s:5,p:2},{no:15,par:4,s:5,p:1},{no:16,par:5,s:7,p:2},{no:17,par:3,s:4,p:2},{no:18,par:4,s:5,p:2}
+      ]}
+  ];
+  var rounds = [];
+  try{
+    var raw = localStorage.getItem(KEY);
+    if(raw){ rounds = JSON.parse(raw) || []; }
+    else if(SEED.length){ rounds = SEED.slice(); save(); }
+  }catch(e){ rounds = []; }
+  rounds.forEach(function(r){ if(!r.player) r.player = "umemura"; });
+  // 2026-11-24修正：旧アプリのスクショは全ホール Yard 400・Par 4 の初期値のままだった。
+  // 楽天GORAのフォレスト市川ゴルフ倶楽部のコース情報では OUT 4,4,5,4,3,5,3,4,4 / IN 4,5,4,3,4,4,5,3,4（計72）。
+  // すでに端末に保存済みの初期データも、次に開いたときにこの正しいParへ直す。
+  (function(){
+    var correctPar = [4,4,5,4,3,5,3,4,4,4,5,4,3,4,4,5,3,4];
+    var changed = false;
+    rounds.forEach(function(r){
+      if(r.id && r.id.indexOf("seed-20261003") === 0 && r.holes && r.holes.length === 18){
+        r.holes.forEach(function(h, i){ if(h.par !== correctPar[i]){ h.par = correctPar[i]; changed = true; } });
+      }
+    });
+    if(changed) save();
+  })();
+  // スクショから追加したラウンド（端末にまだ無ければ取り込む）
+  // 2026-08-01 西脇カントリークラブ：公式情報では18Hは西コース（OUT）→東コース（IN）。
+  // Par 西 5,3,4,4,3,4,4,5,4 / 東 4,4,3,5,4,5,3,4,4（計72）。
+  (function(){
+    var ADD = [
+      { id: "add-20260801-u", player: "umemura", date: "2026-08-01", course: "西脇カントリークラブ", out: 46, inn: 50, putts: 36, memo: "",
+        holes: [
+          {no:1,par:5,s:6,p:2},{no:2,par:3,s:5,p:2},{no:3,par:4,s:4,p:2},{no:4,par:4,s:7,p:2},{no:5,par:3,s:5,p:2},{no:6,par:4,s:5,p:2},{no:7,par:4,s:4,p:2},{no:8,par:5,s:5,p:2},{no:9,par:4,s:5,p:2},
+          {no:10,par:4,s:8,p:1},{no:11,par:4,s:7,p:3},{no:12,par:3,s:5,p:2},{no:13,par:5,s:4,p:2},{no:14,par:4,s:6,p:2},{no:15,par:5,s:4,p:2},{no:16,par:3,s:5,p:2},{no:17,par:4,s:7,p:2},{no:18,par:4,s:4,p:2}
+        ]},
+      { id: "add-20260801-t", player: "takuro", date: "2026-08-01", course: "西脇カントリークラブ", out: 53, inn: 48, putts: 39, memo: "",
+        holes: [
+          {no:1,par:5,s:5,p:2},{no:2,par:3,s:6,p:3},{no:3,par:4,s:6,p:2},{no:4,par:4,s:6,p:2},{no:5,par:3,s:5,p:2},{no:6,par:4,s:8,p:3},{no:7,par:4,s:4,p:3},{no:8,par:5,s:7,p:2},{no:9,par:4,s:6,p:3},
+          {no:10,par:4,s:9,p:2},{no:11,par:4,s:7,p:3},{no:12,par:3,s:5,p:2},{no:13,par:5,s:5,p:1},{no:14,par:4,s:5,p:2},{no:15,par:5,s:4,p:1},{no:16,par:3,s:4,p:2},{no:17,par:4,s:5,p:2},{no:18,par:4,s:4,p:2}
+        ]},
+      // 2025-08-23 粟賀ゴルフ倶楽部 Par OUT 5,4,3,4,4,5,3,4,4 / IN 4,3,4,4,5,4,3,4,5（公式サイト）
+      { id: "add-20250823-u", player: "umemura", date: "2025-08-23", course: "粟賀ゴルフ倶楽部", out: 44, inn: 48, putts: 35, memo: "",
+        holes: [
+          {no:1,par:5,s:5,p:2},{no:2,par:4,s:4,p:2},{no:3,par:3,s:4,p:2},{no:4,par:4,s:5,p:2},{no:5,par:4,s:5,p:2},{no:6,par:5,s:6,p:2},{no:7,par:3,s:3,p:2},{no:8,par:4,s:8,p:3},{no:9,par:4,s:4,p:2},
+          {no:10,par:4,s:5,p:2},{no:11,par:3,s:5,p:2},{no:12,par:4,s:5,p:1},{no:13,par:4,s:5,p:2},{no:14,par:5,s:8,p:2},{no:15,par:4,s:6,p:2},{no:16,par:3,s:4,p:2},{no:17,par:4,s:4,p:1},{no:18,par:5,s:6,p:2}
+        ]},
+      { id: "add-20250823-t", player: "takuro", date: "2025-08-23", course: "粟賀ゴルフ倶楽部", out: 50, inn: 49, putts: 39, memo: "",
+        holes: [
+          {no:1,par:5,s:5,p:2},{no:2,par:4,s:6,p:1},{no:3,par:3,s:5,p:3},{no:4,par:4,s:6,p:3},{no:5,par:4,s:4,p:1},{no:6,par:5,s:7,p:2},{no:7,par:3,s:6,p:2},{no:8,par:4,s:6,p:3},{no:9,par:4,s:5,p:2},
+          {no:10,par:4,s:4,p:1},{no:11,par:3,s:5,p:2},{no:12,par:4,s:6,p:3},{no:13,par:4,s:6,p:3},{no:14,par:5,s:7,p:2},{no:15,par:4,s:5,p:2},{no:16,par:3,s:4,p:2},{no:17,par:4,s:5,p:2},{no:18,par:5,s:7,p:3}
+        ]},
+      // 2025-10-25 大岡ゴルフクラブ Par OUT 4,4,3,5,3,4,4,5,4 / IN 5,4,3,5,4,3,4,4,4（Shot Navi等）
+      { id: "add-20251025-u", player: "umemura", date: "2025-10-25", course: "大岡ゴルフクラブ", out: 53, inn: 46, putts: 37, memo: "",
+        holes: [
+          {no:1,par:4,s:7,p:2},{no:2,par:4,s:5,p:2},{no:3,par:3,s:5,p:2},{no:4,par:5,s:4,p:1},{no:5,par:3,s:5,p:2},{no:6,par:4,s:7,p:4},{no:7,par:4,s:5,p:3},{no:8,par:5,s:10,p:2},{no:9,par:4,s:5,p:2},
+          {no:10,par:5,s:5,p:2},{no:11,par:4,s:5,p:2},{no:12,par:3,s:5,p:2},{no:13,par:5,s:6,p:2},{no:14,par:4,s:5,p:2},{no:15,par:3,s:5,p:3},{no:16,par:4,s:7,p:1},{no:17,par:4,s:4,p:2},{no:18,par:4,s:4,p:1}
+        ]},
+      { id: "add-20251025-t", player: "takuro", date: "2025-10-25", course: "大岡ゴルフクラブ", out: 56, inn: 45, putts: 40, memo: "",
+        holes: [
+          {no:1,par:4,s:5,p:2},{no:2,par:4,s:8,p:3},{no:3,par:3,s:5,p:3},{no:4,par:5,s:7,p:2},{no:5,par:3,s:6,p:2},{no:6,par:4,s:7,p:3},{no:7,par:4,s:7,p:4},{no:8,par:5,s:6,p:2},{no:9,par:4,s:5,p:2},
+          {no:10,par:5,s:6,p:2},{no:11,par:4,s:5,p:2},{no:12,par:3,s:4,p:2},{no:13,par:5,s:6,p:2},{no:14,par:4,s:6,p:2},{no:15,par:3,s:3,p:1},{no:16,par:4,s:5,p:2},{no:17,par:4,s:5,p:2},{no:18,par:4,s:5,p:2}
+        ]},
+      // 2026-01-24 パインレーク Par OUT 4,3,4,5,3,4,4,4,5 / IN 4,5,3,4,4,4,3,5,4（公式サイト）
+      { id: "add-20260124-u", player: "umemura", date: "2026-01-24", course: "パインレーク", out: 52, inn: 51, putts: 40, memo: "",
+        holes: [
+          {no:1,par:4,s:5,p:3},{no:2,par:3,s:6,p:3},{no:3,par:4,s:7,p:2},{no:4,par:5,s:6,p:2},{no:5,par:3,s:5,p:3},{no:6,par:4,s:5,p:2},{no:7,par:4,s:5,p:2},{no:8,par:4,s:7,p:3},{no:9,par:5,s:6,p:2},
+          {no:10,par:4,s:6,p:2},{no:11,par:5,s:6,p:2},{no:12,par:3,s:3,p:1},{no:13,par:4,s:7,p:3},{no:14,par:4,s:6,p:3},{no:15,par:4,s:6,p:2},{no:16,par:3,s:5,p:2},{no:17,par:5,s:6,p:1},{no:18,par:4,s:6,p:2}
+        ]},
+      { id: "add-20260124-t", player: "takuro", date: "2026-01-24", course: "パインレーク", out: 60, inn: 52, putts: 42, memo: "",
+        holes: [
+          {no:1,par:4,s:4,p:2},{no:2,par:3,s:4,p:3},{no:3,par:4,s:15,p:3},{no:4,par:5,s:8,p:3},{no:5,par:3,s:4,p:2},{no:6,par:4,s:7,p:3},{no:7,par:4,s:4,p:2},{no:8,par:4,s:9,p:4},{no:9,par:5,s:5,p:2},
+          {no:10,par:4,s:4,p:1},{no:11,par:5,s:11,p:2},{no:12,par:3,s:5,p:2},{no:13,par:4,s:7,p:2},{no:14,par:4,s:4,p:2},{no:15,par:4,s:6,p:2},{no:16,par:3,s:3,p:2},{no:17,par:5,s:6,p:2},{no:18,par:4,s:6,p:3}
+        ]},
+      // 2026-02-21 サングレート Par OUT 4,4,4,3,5,4,5,3,4 / IN 4,4,3,4,4,5,3,4,5（公式サイト）
+      { id: "add-20260221-u", player: "umemura", date: "2026-02-21", course: "サングレート", out: 46, inn: 52, putts: 35, memo: "",
+        holes: [
+          {no:1,par:4,s:5,p:1},{no:2,par:4,s:4,p:2},{no:3,par:4,s:5,p:1},{no:4,par:3,s:4,p:2},{no:5,par:5,s:5,p:2},{no:6,par:4,s:4,p:2},{no:7,par:5,s:9,p:3},{no:8,par:3,s:3,p:1},{no:9,par:4,s:7,p:2},
+          {no:10,par:4,s:5,p:2},{no:11,par:4,s:5,p:2},{no:12,par:3,s:2,p:1},{no:13,par:4,s:9,p:2},{no:14,par:4,s:6,p:3},{no:15,par:5,s:8,p:3},{no:16,par:3,s:4,p:2},{no:17,par:4,s:6,p:2},{no:18,par:5,s:7,p:2}
+        ]},
+      { id: "add-20260221-t", player: "takuro", date: "2026-02-21", course: "サングレート", out: 56, inn: 45, putts: 37, memo: "",
+        holes: [
+          {no:1,par:4,s:4,p:1},{no:2,par:4,s:7,p:2},{no:3,par:4,s:9,p:3},{no:4,par:3,s:6,p:2},{no:5,par:5,s:8,p:3},{no:6,par:4,s:4,p:1},{no:7,par:5,s:8,p:2},{no:8,par:3,s:4,p:2},{no:9,par:4,s:6,p:1},
+          {no:10,par:4,s:6,p:2},{no:11,par:4,s:5,p:2},{no:12,par:3,s:2,p:1},{no:13,par:4,s:5,p:2},{no:14,par:4,s:5,p:2},{no:15,par:5,s:7,p:3},{no:16,par:3,s:4,p:3},{no:17,par:4,s:6,p:3},{no:18,par:5,s:5,p:2}
+        ]},
+      // 2026-03-28 アオノコース Par OUT 4,3,4,5,4,5,4,3,4 / IN 4,5,3,4,4,5,3,4,4（公式サイト）
+      { id: "add-20260328-u", player: "umemura", date: "2026-03-28", course: "アオノコース", out: 50, inn: 43, putts: 34, memo: "",
+        holes: [
+          {no:1,par:4,s:7,p:1},{no:2,par:3,s:6,p:3},{no:3,par:4,s:6,p:1},{no:4,par:5,s:6,p:2},{no:5,par:4,s:4,p:2},{no:6,par:5,s:5,p:2},{no:7,par:4,s:5,p:1},{no:8,par:3,s:4,p:3},{no:9,par:4,s:7,p:2},
+          {no:10,par:4,s:4,p:2},{no:11,par:5,s:5,p:1},{no:12,par:3,s:4,p:3},{no:13,par:4,s:6,p:3},{no:14,par:4,s:5,p:2},{no:15,par:5,s:6,p:2},{no:16,par:3,s:4,p:1},{no:17,par:4,s:5,p:2},{no:18,par:4,s:4,p:1}
+        ]},
+      { id: "add-20260328-t", player: "takuro", date: "2026-03-28", course: "アオノコース", out: 51, inn: 50, putts: 40, memo: "",
+        holes: [
+          {no:1,par:4,s:5,p:1},{no:2,par:3,s:5,p:3},{no:3,par:4,s:5,p:2},{no:4,par:5,s:5,p:2},{no:5,par:4,s:5,p:2},{no:6,par:5,s:8,p:2},{no:7,par:4,s:6,p:2},{no:8,par:3,s:6,p:4},{no:9,par:4,s:6,p:3},
+          {no:10,par:4,s:7,p:2},{no:11,par:5,s:7,p:3},{no:12,par:3,s:3,p:1},{no:13,par:4,s:7,p:2},{no:14,par:4,s:7,p:3},{no:15,par:5,s:6,p:2},{no:16,par:3,s:4,p:2},{no:17,par:4,s:5,p:2},{no:18,par:4,s:4,p:2}
+        ]}
+    ];
+    var added = false;
+    ADD.forEach(function(r){
+      var ex = null;
+      rounds.forEach(function(x){ if(x.id === r.id) ex = x; });
+      if(!ex){ rounds.push(r); added = true; }
+      else if(ex.holes && r.holes && ex.holes.length < r.holes.length){ ex.holes = r.holes; ex.memo = r.memo; added = true; }
+    });
+    if(added) save();
+  })();
+  var NAMES = { umemura: "しんご", takuro: "たくろー" };
+  var currentPlayer = "umemura";
+  var formPlayer = "umemura";
+  function save(){ try{ localStorage.setItem(KEY, JSON.stringify(rounds)); }catch(e){} }
+  function yen(n){ return n == null ? "–" : String(n); }
+  function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  function total(r){ var t = 0, has = false; if(r.out){ t += r.out; has = true; } if(r.inn){ t += r.inn; has = true; } return has ? t : null; }
+  function fmtDate(d){
+    if(!d) return "";
+    var p = d.split("-"); if(p.length !== 3) return d;
+    var dt = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+    var w = ["日","月","火","水","木","金","土"][dt.getDay()];
+    return Number(p[1]) + "/" + Number(p[2]) + "（" + w + "）";
+  }
+  function playerStats(pid){
+    var rs = rounds.filter(function(r){ return r.player === pid; });
+    var ts = rs.map(total).filter(function(x){ return x != null; });
+    var ps = rs.map(function(r){ return r.putts; }).filter(function(x){ return x; });
+    return {
+      count: rs.length,
+      avg: ts.length ? (ts.reduce(function(a,b){ return a+b; },0)/ts.length).toFixed(1) : "–",
+      best: ts.length ? Math.min.apply(null, ts) : "–",
+      putt: ps.length ? (ps.reduce(function(a,b){ return a+b; },0)/ps.length).toFixed(1) : "–"
+    };
+  }
+  function detailHtml(r){
+    if(!r.holes || !r.holes.length) return "";
+    function row(h){
+      var cls = h.s > h.par ? "over" : (h.s < h.par ? "under" : "");
+      return "<tr><td>" + h.no + "</td><td>" + h.par + "</td><td class=\"" + cls + "\">" + h.s + "</td><td>" + (h.p == null ? "–" : h.p) + "</td></tr>";
+    }
+    function sub(label, hs){
+      var par = 0, s = 0, p = 0, hasP = false;
+      hs.forEach(function(h){ par += h.par; s += h.s; if(h.p != null){ p += h.p; hasP = true; } });
+      return "<tr class=\"sub\"><td>" + label + "</td><td>" + par + "</td><td>" + s + "</td><td>" + (hasP ? p : "–") + "</td></tr>";
+    }
+    var out = r.holes.filter(function(h){ return h.no <= 9; });
+    var inn = r.holes.filter(function(h){ return h.no > 9; });
+    var html = "<table class=\"score-table\"><tr><th>No</th><th>Par</th><th>打数</th><th>パット</th></tr>";
+    html += out.map(row).join("");
+    if(out.length) html += sub("OUT", out);
+    html += inn.map(row).join("");
+    if(inn.length) html += sub("IN", inn);
+    if(out.length && inn.length) html += sub("合計", r.holes);
+    html += "</table>";
+    return html;
+  }
+  function render(){
+    document.getElementById("tab-umemura").className = "tab" + (currentPlayer === "umemura" ? " on" : "");
+    document.getElementById("tab-takuro").className = "tab" + (currentPlayer === "takuro" ? " on" : "");
+    document.getElementById("sum-name").textContent = NAMES[currentPlayer];
+    document.getElementById("list-name").textContent = NAMES[currentPlayer];
+    var cu = playerStats("umemura"), ct = playerStats("takuro");
+    document.getElementById("cmp-count-u").textContent = cu.count;
+    document.getElementById("cmp-count-t").textContent = ct.count;
+    document.getElementById("cmp-avg-u").innerHTML = "<b>" + cu.avg + "</b>";
+    document.getElementById("cmp-avg-t").innerHTML = "<b>" + ct.avg + "</b>";
+    document.getElementById("cmp-best-u").textContent = cu.best;
+    document.getElementById("cmp-best-t").textContent = ct.best;
+    document.getElementById("cmp-putt-u").textContent = cu.putt;
+    document.getElementById("cmp-putt-t").textContent = ct.putt;
+    var sorted = rounds.filter(function(r){ return r.player === currentPlayer; }).sort(function(a,b){ return a.date < b.date ? 1 : (a.date > b.date ? -1 : 0); });
+    // サマリー
+    var totals = sorted.map(total).filter(function(x){ return x != null; });
+    document.getElementById("st-count").textContent = yen(sorted.length);
+    if(totals.length){
+      var avg = totals.reduce(function(a,b){ return a+b; }, 0) / totals.length;
+      document.getElementById("st-avg").textContent = avg.toFixed(1);
+      document.getElementById("st-best").textContent = yen(Math.min.apply(null, totals));
+    } else {
+      document.getElementById("st-avg").textContent = "–";
+      document.getElementById("st-best").textContent = "–";
+    }
+    var putts = sorted.map(function(r){ return r.putts; }).filter(function(x){ return x; });
+    document.getElementById("st-putt").textContent = putts.length ? (putts.reduce(function(a,b){ return a+b; },0)/putts.length).toFixed(1) : "–";
+    // グラフ（直近10ラウンド、古い順）
+    var chart = document.getElementById("chart");
+    var recent = sorted.slice(0,10).reverse();
+    if(recent.length && totals.length){
+      var best = Math.min.apply(null, totals);
+      var max = Math.max.apply(null, recent.map(total).filter(function(x){ return x != null; }));
+      var min = Math.min.apply(null, recent.map(total).filter(function(x){ return x != null; }));
+      var range = Math.max(10, max - Math.min(60, min));
+      chart.innerHTML = recent.map(function(r){
+        var t = total(r); if(t == null) return "";
+        var h = Math.max(12, Math.round((t - Math.min(60, min)) / range * 84));
+        return '<div class="bar-wrap"><div class="bar-val">' + t + '</div><div class="bar' + (t === best ? " best" : "") + '" style="height:' + h + 'px"></div><div class="bar-lbl">' + esc(fmtDate(r.date)) + '</div></div>';
+      }).join("");
+      document.getElementById("chart-note").textContent = "直近" + recent.length + "ラウンドのスコア推移（金色はベストスコア）";
+    } else {
+      chart.innerHTML = "";
+      document.getElementById("chart-note").textContent = "";
+    }
+    // 一覧
+    var list = document.getElementById("list");
+    if(!sorted.length){
+      list.innerHTML = '<div class="empty">まだラウンドが登録されていません</div>';
+    } else {
+      list.innerHTML = sorted.map(function(r){
+        var t = total(r);
+        var meta = fmtDate(r.date);
+        var parts = [];
+        if(r.out) parts.push("OUT " + r.out);
+        if(r.inn) parts.push("IN " + r.inn);
+        if(r.putts) parts.push("パット " + r.putts);
+        if(parts.length) meta += "　" + parts.join(" / ");
+        if(r.memo) meta += "<br>" + esc(r.memo);
+        var det = detailHtml(r);
+        var detBtn = det ? '<button class="detail-btn" data-detail="' + r.id + '">詳細を見る</button><div id="det-' + r.id + '" style="display:none">' + det + '</div>' : '';
+        return '<div class="round"><div class="round-top"><div class="round-course">' + esc(r.course || "（コース名なし）") + '</div><div class="round-score">' + (t == null ? "–" : t) + '</div></div><div class="round-meta">' + meta + '</div>' + detBtn + '<button class="round-del" data-del="' + r.id + '">このラウンドを削除</button></div>';
+      }).join("");
+      Array.prototype.forEach.call(list.querySelectorAll("[data-detail]"), function(btn){
+        btn.addEventListener("click", function(){
+          var el = document.getElementById("det-" + btn.getAttribute("data-detail"));
+          if(!el) return;
+          var open = el.style.display !== "none";
+          el.style.display = open ? "none" : "block";
+          btn.textContent = open ? "詳細を見る" : "詳細を閉じる";
+        });
+      });
+      Array.prototype.forEach.call(list.querySelectorAll("[data-del]"), function(btn){
+        btn.addEventListener("click", function(){
+          if(!confirm("このラウンドを削除しますか？")) return;
+          rounds = rounds.filter(function(r){ return r.id !== btn.getAttribute("data-del"); });
+          save(); render();
+        });
+      });
+    }
+  }
+  function updTotal(){
+    var o = parseInt(document.getElementById("f-out").value, 10);
+    var i = parseInt(document.getElementById("f-in").value, 10);
+    var t = (isNaN(o) ? 0 : o) + (isNaN(i) ? 0 : i);
+    document.getElementById("f-total").textContent = (isNaN(o) && isNaN(i)) ? "–" : t;
+  }
+  document.getElementById("f-out").addEventListener("input", updTotal);
+  document.getElementById("f-in").addEventListener("input", updTotal);
+  document.getElementById("f-date").value = new Date().toISOString().slice(0,10);
+  document.getElementById("btn-add").addEventListener("click", function(){
+    var date = document.getElementById("f-date").value;
+    var course = document.getElementById("f-course").value.trim();
+    var out = parseInt(document.getElementById("f-out").value, 10);
+    var inn = parseInt(document.getElementById("f-in").value, 10);
+    var putts = parseInt(document.getElementById("f-putts").value, 10);
+    var memo = document.getElementById("f-memo").value.trim();
+    if(!date){ alert("日付を入れてください"); return; }
+    if(isNaN(out) && isNaN(inn)){ alert("OUTかINのスコアを入れてください"); return; }
+    rounds.push({ id: "r" + Date.now(), player: formPlayer, date: date, course: course, out: isNaN(out) ? null : out, inn: isNaN(inn) ? null : inn, putts: isNaN(putts) ? null : putts, memo: memo });
+    currentPlayer = formPlayer;
+    save(); render();
+    document.getElementById("f-course").value = "";
+    document.getElementById("f-out").value = "";
+    document.getElementById("f-in").value = "";
+    document.getElementById("f-putts").value = "";
+    document.getElementById("f-memo").value = "";
+    updTotal();
+    alert("登録しました");
+  });
+  document.getElementById("btn-export").addEventListener("click", function(){
+    var blob = new Blob([JSON.stringify(rounds, null, 2)], {type: "application/json"});
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "golf-scores.json";
+    a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
+  });
+  var fileInput = document.getElementById("file-import");
+  document.getElementById("btn-import").addEventListener("click", function(){ fileInput.click(); });
+  fileInput.addEventListener("change", function(){
+    var f = fileInput.files && fileInput.files[0];
+    if(!f) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      try{
+        var data = JSON.parse(reader.result);
+        if(!Array.isArray(data)) throw new Error("bad");
+        rounds = data; save(); render();
+        alert("読み込みました");
+      }catch(e){ alert("読み込めませんでした"); }
+    };
+    reader.readAsText(f);
+  });
+  function setTab(pid){ currentPlayer = pid; render(); }
+  document.getElementById("tab-umemura").addEventListener("click", function(){ setTab("umemura"); });
+  document.getElementById("tab-takuro").addEventListener("click", function(){ setTab("takuro"); });
+  function setSeg(pid){
+    formPlayer = pid;
+    document.getElementById("seg-umemura").className = pid === "umemura" ? "on" : "";
+    document.getElementById("seg-takuro").className = pid === "takuro" ? "on" : "";
+  }
+  document.getElementById("seg-umemura").addEventListener("click", function(){ setSeg("umemura"); });
+  document.getElementById("seg-takuro").addEventListener("click", function(){ setSeg("takuro"); });
+  render();
+})();
+</script>
+</body>
+</html>
