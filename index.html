@@ -29,6 +29,8 @@
   .bar-wrap{flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; min-width:0;}
   .bar{width:70%; max-width:26px; background:var(--green); border-radius:4px 4px 0 0;}
   .bar.best{background:#d4a017;}
+  .bar.win{background:#1565c0;}
+  .bar.lose{background:#c62828;}
   .bar-lbl{font-size:10px; color:var(--muted); white-space:nowrap;}
   .bar-val{font-size:11px; font-weight:600;}
   label{display:block; font-size:12px; color:var(--muted); margin:10px 0 4px;}
@@ -489,16 +491,23 @@
     var recent = sorted.slice(0,10).reverse();
     if(recent.length && totals.length){
       var best = Math.min.apply(null, totals);
+      var oppMap = {};
+      rounds.forEach(function(r){ if(r.player !== currentPlayer) oppMap[r.date + "|" + r.course] = total(r); });
       var max = Math.max.apply(null, recent.map(total).filter(function(x){ return x != null; }));
       var min = Math.min.apply(null, recent.map(total).filter(function(x){ return x != null; }));
       var range = Math.max(10, max - Math.min(60, min));
       chart.innerHTML = recent.map(function(r){
         var t = total(r); if(t == null) return "";
         var h = Math.max(12, Math.round((t - Math.min(60, min)) / range * 84));
-        return '<div class="bar-wrap"><div class="bar-val">' + t + '</div><div class="bar' + (t === best ? " best" : "") + '" style="height:' + h + 'px"></div><div class="bar-lbl">' + esc(fmtDate(r.date)) + '</div></div>';
+        var opp = oppMap[r.date + "|" + r.course];
+        var cls = "";
+        if(t === best) cls = " best";
+        else if(opp != null && t < opp) cls = " win";
+        else if(opp != null && t > opp) cls = " lose";
+        return '<div class="bar-wrap"><div class="bar-val">' + t + '</div><div class="bar' + cls + '" style="height:' + h + 'px"></div><div class="bar-lbl">' + esc(fmtDate(r.date)) + '</div></div>';
       }).join("");
       var scope = (currentCourse === "all" ? "" : currentCourse + "／") + (currentYear === "all" ? "" : currentYear + "年");
-      document.getElementById("chart-note").textContent = (scope ? scope + "の" : "") + "直近" + recent.length + "ラウンドのスコア推移（金色はベストスコア）";
+      document.getElementById("chart-note").textContent = (scope ? scope + "の" : "") + "直近" + recent.length + "ラウンドのスコア推移（青＝勝ち・赤＝負け・金＝ベスト）";
     } else {
       chart.innerHTML = "";
       document.getElementById("chart-note").textContent = "";
