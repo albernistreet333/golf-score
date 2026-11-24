@@ -414,6 +414,24 @@
     function av(x){ return n ? (x / n).toFixed(1) : "–"; }
     return { birdie: av(c.birdie), bogey: av(c.bogey), dbl: av(c.dbl), tpl: av(c.tpl) };
   }
+  function holeCounts(r){
+    var b = 0, p = 0;
+    if(r.holes) r.holes.forEach(function(h){ var d = h.s - h.par; if(d <= -1) b++; else if(d === 0) p++; });
+    return { b: b, p: p };
+  }
+  function matchResult(mine, opp){
+    if(!opp) return null;
+    var mt = total(mine), ot = total(opp);
+    if(mt == null || ot == null) return null;
+    if(mt < ot) return "win";
+    if(mt > ot) return "lose";
+    if(mine.holes && mine.holes.length && opp.holes && opp.holes.length){
+      var mc = holeCounts(mine), oc = holeCounts(opp);
+      if(mc.b !== oc.b) return mc.b > oc.b ? "win" : "lose";
+      if(mc.p !== oc.p) return mc.p > oc.p ? "win" : "lose";
+    }
+    return "draw";
+  }
   function playerStats(pid){
     var rs = rounds.filter(function(r){ return r.player === pid && inYear(r) && inCourse(r); });
     var ts = rs.map(total).filter(function(x){ return x != null; });
@@ -492,18 +510,18 @@
     if(recent.length && totals.length){
       var best = Math.min.apply(null, totals);
       var oppMap = {};
-      rounds.forEach(function(r){ if(r.player !== currentPlayer) oppMap[r.date + "|" + r.course] = total(r); });
+      rounds.forEach(function(r){ if(r.player !== currentPlayer) oppMap[r.date + "|" + r.course] = r; });
       var max = Math.max.apply(null, recent.map(total).filter(function(x){ return x != null; }));
       var min = Math.min.apply(null, recent.map(total).filter(function(x){ return x != null; }));
       var range = Math.max(10, max - Math.min(60, min));
       chart.innerHTML = recent.map(function(r){
         var t = total(r); if(t == null) return "";
         var h = Math.max(12, Math.round((t - Math.min(60, min)) / range * 84));
-        var opp = oppMap[r.date + "|" + r.course];
+        var res = matchResult(r, oppMap[r.date + "|" + r.course]);
         var cls = "";
         if(t === best) cls = " best";
-        else if(opp != null && t < opp) cls = " win";
-        else if(opp != null && t > opp) cls = " lose";
+        else if(res === "win") cls = " win";
+        else if(res === "lose") cls = " lose";
         return '<div class="bar-wrap"><div class="bar-val">' + t + '</div><div class="bar' + cls + '" style="height:' + h + 'px"></div><div class="bar-lbl">' + esc(fmtDate(r.date)) + '</div></div>';
       }).join("");
       var scope = (currentCourse === "all" ? "" : currentCourse + "／") + (currentYear === "all" ? "" : currentYear + "年");
